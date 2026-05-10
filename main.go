@@ -22,7 +22,7 @@ func terminalSize() (int, int) {
 }
 
 func main() {
-	file, err := os.Open("./ascii/test_image/mlp2.jpeg")
+	file, err := os.Open("./ascii/test_image/tux.jpeg")
 	if err != nil {
 		panic(err)
 	}

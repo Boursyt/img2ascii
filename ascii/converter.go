@@ -65,8 +65,8 @@ func ConvertToAscii(img image.Image, maxW, maxH int) string {
 		for x := bounds.Min.X; x < bounds.Max.X; x++ {
 			r, g, b, _ := rgbaAt(img, x, y)
 			lum := luminance(r, g, b)
-			shade := int(lum * float32(len(RampShortAlt)-1) / 0xFFFF)
-			sb.WriteByte(RampShortAlt[shade])
+			shade := int(lum * float32(len(RampShort)-1) / 0xFFFF)
+			sb.WriteByte(RampShort[shade])
 		}
 		sb.WriteByte('\n')
 	}
