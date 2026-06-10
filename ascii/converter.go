@@ -1,6 +1,7 @@
 package ascii
 
 import (
+	"errors"
 	"image"
 	_ "image/jpeg"
 	_ "image/png"
@@ -18,10 +19,13 @@ const (
 	RampBinary   = " #"
 )
 
+var ErrInvalidSize = errors.New("max width and height must be greater than zero")
+var ErrInvalidRamp = errors.New("ramp must contain at least two characters")
+
 // charAspect compensates for terminal cells being taller than wide (~2:1).
 const charAspect = 2.0
 
-// imgResize scales the image to fit within maxW x maxH cells while preserving
+// imgResize scales the image to fit within maxW x maxH cells while preserving aspect ratio.
 func imgResize(img image.Image, maxW, maxH int) image.Image {
 	bounds := img.Bounds()
 	imgW := float64(bounds.Dx())
@@ -56,7 +60,20 @@ func luminance(r, g, b uint32) float32 {
 	return 0.299*float32(r) + 0.587*float32(g) + 0.114*float32(b)
 }
 
-func ConvertToAscii(img image.Image, maxW, maxH int) string {
+func ConvertToAscii(img image.Image, maxW, maxH int) (string, error) {
+	return ConvertToAsciiWithRamp(img, maxW, maxH, RampShort)
+}
+
+func ConvertToAsciiWithRamp(img image.Image, maxW, maxH int, ramp string) (string, error) {
+	if maxW <= 0 || maxH <= 0 {
+		return "", ErrInvalidSize
+	}
+
+	rampChars := []rune(ramp)
+	if len(rampChars) < 2 {
+		return "", ErrInvalidRamp
+	}
+
 	img = imgResize(img, maxW, maxH)
 	bounds := img.Bounds()
 	var sb strings.Builder
@@ -65,10 +82,10 @@ func ConvertToAscii(img image.Image, maxW, maxH int) string {
 		for x := bounds.Min.X; x < bounds.Max.X; x++ {
 			r, g, b, _ := rgbaAt(img, x, y)
 			lum := luminance(r, g, b)
-			shade := int(lum * float32(len(RampShort)-1) / 0xFFFF)
-			sb.WriteByte(RampShort[shade])
+			shade := int(lum * float32(len(rampChars)-1) / 0xFFFF)
+			sb.WriteRune(rampChars[shade])
 		}
 		sb.WriteByte('\n')
 	}
-	return sb.String()
+	return sb.String(), nil
 }

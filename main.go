@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"image"
 	"os"
@@ -9,6 +10,15 @@ import (
 
 	"golang.org/x/term"
 )
+
+var ramps = map[string]string{
+	"short":     ascii.RampShort,
+	"short-alt": ascii.RampShortAlt,
+	"bourke70":  ascii.RampBourke70,
+	"blocks":    ascii.RampBlocks,
+	"inverted":  ascii.RampInverted,
+	"binary":    ascii.RampBinary,
+}
 
 // terminalSize returns the usable terminal width and height in cells.
 // Falls back to 80x24 when stdout is not a terminal.
@@ -21,19 +31,48 @@ func terminalSize() (int, int) {
 	return w, h - 1
 }
 
+func fail(format string, args ...any) {
+	fmt.Fprintf(os.Stderr, format+"\n", args...)
+	os.Exit(1)
+}
+
 func main() {
-	file, err := os.Open("./ascii/test_image/tux.jpeg")
+	width := flag.Int("width", 0, "output width in terminal cells (0 uses terminal width)")
+	height := flag.Int("height", 0, "output height in terminal cells (0 uses terminal height minus one row)")
+	rampName := flag.String("ramp", "short", "character ramp: short, short-alt, bourke70, blocks, inverted, binary")
+	flag.Parse()
+
+	if flag.NArg() != 1 {
+		fail("usage: img2ascii [flags] <image-path>")
+	}
+
+	ramp, ok := ramps[*rampName]
+	if !ok {
+		fail("unknown ramp %q", *rampName)
+	}
+
+	termW, termH := terminalSize()
+	if *width == 0 {
+		*width = termW
+	}
+	if *height == 0 {
+		*height = termH
+	}
+
+	file, err := os.Open(flag.Arg(0))
 	if err != nil {
-		panic(err)
+		fail("open image: %v", err)
 	}
 	defer file.Close()
 
 	img, _, err := image.Decode(file)
 	if err != nil {
-		panic(err)
+		fail("decode image: %v", err)
 	}
 
-	w, h := terminalSize()
-	asciiArt := ascii.ConvertToAscii(img, w, h)
+	asciiArt, err := ascii.ConvertToAsciiWithRamp(img, *width, *height, ramp)
+	if err != nil {
+		fail("convert image: %v", err)
+	}
 	fmt.Print(asciiArt)
 }
