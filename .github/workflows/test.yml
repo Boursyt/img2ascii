@@ -1,0 +1,46 @@
+name: test.yml
+on:
+  push:
+    branches:
+      - '*'
+    tags:
+      - '*'
+  pull_request:
+    branches:
+      - 'main'
+      - 'develop'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: write
+    steps:
+      - name: checkout
+        uses: actions/checkout@v6
+
+      - name: setup GO
+        id: setup-go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: go test with coverage
+        run: go test -covermode=atomic -coverpkg=./... -coverprofile=coverage.txt ./...
+
+      - name: generate octocov config
+        run: |
+          cat > .octocov.yml <<'YAML'
+          coverage:
+            paths:
+              - coverage.txt
+          comment:
+            if: is_pull_request
+          summary:
+            if: true
+          YAML
+
+      - name: coverage report
+        uses: k1LoW/octocov-action@v1

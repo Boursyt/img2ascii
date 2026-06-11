@@ -35,19 +35,21 @@ func terminalSize() (int, int) {
 
 func displayRamp() {
 	for _, name := range rampNames {
-		fmt.Printf("%-10s [%s]\n", name, ramps[name])
+		if _, err := fmt.Printf("%-10s [%s]\n", name, ramps[name]); err != nil {
+			fail("write output: %v", err)
+		}
 	}
 }
 
 func fail(format string, args ...any) {
-	fmt.Fprintf(os.Stderr, format+"\n", args...)
+	_, _ = fmt.Fprintf(os.Stderr, format+"\n", args...)
 	os.Exit(1)
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "Usage: img2ascii [flags] <image-path>")
-	fmt.Fprintln(os.Stderr)
-	fmt.Fprintln(os.Stderr, "Flags:")
+	_, _ = fmt.Fprintln(os.Stderr, "Usage: img2ascii [flags] <image-path>")
+	_, _ = fmt.Fprintln(os.Stderr)
+	_, _ = fmt.Fprintln(os.Stderr, "Flags:")
 	flag.PrintDefaults()
 }
 
@@ -86,7 +88,9 @@ func main() {
 	if err != nil {
 		fail("open image: %v", err)
 	}
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 
 	img, _, err := image.Decode(file)
 	if err != nil {
@@ -97,5 +101,7 @@ func main() {
 	if err != nil {
 		fail("convert image: %v", err)
 	}
-	fmt.Print(asciiArt)
+	if _, err := fmt.Print(asciiArt); err != nil {
+		fail("write output: %v", err)
+	}
 }
