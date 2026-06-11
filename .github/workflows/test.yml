@@ -13,6 +13,10 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: write
     steps:
       - name: checkout
         uses: actions/checkout@v6
@@ -24,27 +28,19 @@ jobs:
           go-version-file: go.mod
 
       - name: go test with coverage
-        run: go test -coverpkg=./... -coverprofile=coverage.txt ./...
+        run: go test -covermode=atomic -coverpkg=./... -coverprofile=coverage.txt ./...
 
-      - name: upload coverage
-        uses: actions/upload-artifact@v7
-        with:
-          name: code-coverage
-          path: coverage.txt
+      - name: generate octocov config
+        run: |
+          cat > .octocov.yml <<'YAML'
+          coverage:
+            paths:
+              - coverage.txt
+          comment:
+            if: is_pull_request
+          summary:
+            if: true
+          YAML
 
-  code_coverage:
-    name: "Code coverage report"
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    needs: test
-    permissions:
-      contents:      read
-      actions:       read
-      pull-requests: write
-    steps:
-      - uses: fgrosse/go-coverage-report@v1.3.0
-        with:
-          coverage-artifact-name: "code-coverage"
-          coverage-file-name: "coverage.txt"
-          root-package: "img2ascii"
-
+      - name: coverage report
+        uses: k1LoW/octocov-action@v1
