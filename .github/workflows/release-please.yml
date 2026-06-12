@@ -1,0 +1,42 @@
+name: release-please.yml
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - name: Release please
+        id: release
+        uses: googleapis/release-please-action@v4
+        with:
+          release-type: go
+
+  build:
+    if: needs.release-please.outputs.release_created == 'true'
+    uses: ./.github/workflows/build.yml
+    needs: release-please
+    permissions:
+      contents: read
+      actions: read
+
+  upload-release-assets:
+    if: needs.release-please.outputs.release_created == 'true'
+    uses: ./.github/workflows/release.yml
+    needs:
+      - release-please
+      - build
+    with:
+      tag: ${{ needs.release-please.outputs.tag_name }}
+    permissions:
+      contents: write
+      actions: read
