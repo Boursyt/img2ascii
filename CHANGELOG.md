@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/Boursyt/img2ascii/compare/v1.0.0...v1.0.1) (2026-06-18)
+
+
+### Bug Fixes
+
+* update GitHub Actions workflows to refine branch triggers and add checkout step ([430718b](https://github.com/Boursyt/img2ascii/commit/430718b5896d5f013e85e629bc26ee4e37d3a4a1))
+
 ## 1.0.0 (2026-06-18)
 
 
