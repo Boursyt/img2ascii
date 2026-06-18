@@ -1,0 +1,56 @@
+name: build.yml
+on:
+  workflow_call:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v6
+
+      - name: setup GO
+        id: setup-go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - name: Install GO dependencies
+        run: go mod download
+
+      - name: Build binaries
+        run: |
+          mkdir -p dist
+
+          build() {
+            os="$1"
+            arch="$2"
+            ext="$3"
+            name="img2ascii-${os}-${arch}"
+            output_dir="dist/${name}"
+
+            echo "Building ${name}..."
+            mkdir -p "$output_dir"
+            GOOS="$os" GOARCH="$arch" CGO_ENABLED=0 go build -o "${output_dir}/img2ascii${ext}"
+
+            if [ "$os" = "windows" ]; then
+              (cd "$output_dir" && zip -q "../${name}.zip" "img2ascii${ext}")
+            else
+              tar -C "$output_dir" -czf "dist/${name}.tar.gz" "img2ascii${ext}"
+            fi
+          }
+
+          build linux amd64 ""
+          build linux arm64 ""
+          build linux riscv64 ""
+          build darwin arm64 ""
+          build darwin amd64 ""
+          build windows amd64 ".exe"
+          build windows arm64 ".exe"
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@v7
+        with:
+          name: img2ascii-binaries
+          path: |
+            dist/*.tar.gz
+            dist/*.zip

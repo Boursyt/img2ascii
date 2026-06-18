@@ -1,0 +1,27 @@
+name: main.yml
+on:
+  push:
+    branches:
+      - '*'
+  pull_request:
+    branches:
+      - 'main'
+      - 'develop'
+
+
+jobs:
+
+  test:
+    uses: ./.github/workflows/test.yml
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: write
+
+  build:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/build.yml
+    needs: test
+    permissions:
+      contents: read
+      actions: read
