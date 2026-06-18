@@ -18,10 +18,40 @@ jobs:
       actions: read
       pull-requests: write
 
+  release-please:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: test
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - name: Release please
+        id: release
+        uses: googleapis/release-please-action@v5
+        with:
+          release-type: go
+
   build:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     uses: ./.github/workflows/build.yml
     needs: test
     permissions:
       contents: read
+      actions: read
+
+  upload-release-assets:
+    if: needs.release-please.outputs.release_created == 'true'
+    uses: ./.github/workflows/release.yml
+    needs:
+      - release-please
+      - build
+    with:
+      tag: ${{ needs.release-please.outputs.tag_name }}
+    permissions:
+      contents: write
       actions: read
